@@ -5,6 +5,8 @@ from restish import resource
 from restish import http
 
 from cheesy2 import arp
+from cheesy2 import from_libvirt
+
 class Named(object):
     def __init__(self, name, value):
         self.name = name
@@ -112,13 +114,16 @@ def get_metadata(metadata_dir, request):
         macaddr = arp.get_mac_address(ipaddr)
     except arp.ArpResolutionError as e:
         return {}
-    return {
+    meta = {
         'cheesy2-ip-address-seen': ipaddr,
         'cheesy2-mac-address-seen': macaddr,
         # not sure if this is the smartest thing, but it is unique
         'instance-id': macaddr,
         'local-hostname': 'vm{0}.internal'.format(macaddr)
         }
+    virt = from_libvirt.get_libvirt_config(macaddr)
+    meta.update(virt)
+    return meta
 
 def setup_environ(app, global_config, local_config):
         """

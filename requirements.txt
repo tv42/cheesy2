@@ -2,4 +2,4 @@ PasteScript
 WSGIUtils
 nose
 WebTest
-
+lxml
