@@ -130,7 +130,7 @@ def get_metadata(metadata_dir, request):
     virt = from_libvirt.get_libvirt_config(macaddr)
     meta.update(virt)
     try:
-        with file(os.path.join(metadata_dir, '{0}.json'.format(macaddr))) as f:
+        with file(os.path.join(metadata_dir, '{0}.json'.format(meta['local-hostname']))) as f:
             custom = json.load(f)
     except IOError, e:
         if e.errno == errno.ENOENT:
