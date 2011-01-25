@@ -71,7 +71,10 @@ class MetaData(resource.Resource):
                         yield '{0}\n'.format(k)
             elif isinstance(self.metadata, list):
                 for i, v in enumerate(self.metadata):
-                    name = ''
+                    # it always needs some name (or cloud-init will
+                    # write "0=" into ssh authorized_keys), so provide
+                    # the index as a default
+                    name = '{0}'.format(i)
                     if isinstance(v, Named):
                         name = v.name
                     yield '{0}={1}\n'.format(i, name)
