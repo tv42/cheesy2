@@ -42,6 +42,17 @@ class APIVersion(resource.Resource):
         meta = request.environ['cheesy2.metadata'](request)
         return MetaData(metadata=meta)
 
+    @resource.child('user-data')
+    def user_data(self, request, segments):
+        if segments:
+            return None
+        data = request.environ['cheesy2.userdata'](request)
+        if data is not None:
+            return http.ok(
+                [('Content-Type', 'text/plain')],
+                [data],
+                )
+
 class MetaData(resource.Resource):
 
     def __init__(self, metadata):
@@ -114,7 +125,8 @@ class MetaData(resource.Resource):
 
         return MetaData(metadata=meta), segments[1:]
 
-def get_metadata(metadata_dir, request):
+def load_builtin_metadata(request):
+    """Load metadata from builtin and libvirt sources (not configuration)."""
     ipaddr = request.remote_addr
     try:
         macaddr = arp.get_mac_address(ipaddr)
@@ -129,6 +141,10 @@ def get_metadata(metadata_dir, request):
         }
     virt = from_libvirt.get_libvirt_config(macaddr)
     meta.update(virt)
+    return meta
+
+def get_metadata(metadata_dir, request):
+    meta = load_builtin_metadata(request)
     try:
         with file(os.path.join(metadata_dir, '{0}.json'.format(meta['local-hostname']))) as f:
             custom = json.load(f)
@@ -141,6 +157,17 @@ def get_metadata(metadata_dir, request):
         meta.update(custom)
     return meta
 
+def get_userdata(metadata_dir, request):
+    meta = load_builtin_metadata(request)
+    try:
+        with file(os.path.join(metadata_dir, '{0}.data'.format(meta['local-hostname']))) as f:
+            return f.read()
+    except IOError, e:
+        if e.errno == errno.ENOENT:
+            pass
+        else:
+            raise
+
 def setup_environ(app, global_config, local_config):
         """
         WSGI application wrapper factory for extending the WSGI environ with
@@ -149,10 +176,13 @@ def setup_environ(app, global_config, local_config):
         metadata_dir = local_config.get('metadata-dir', 'metadata')
         def _get_metadata(request):
             return get_metadata(metadata_dir, request)
+        def _get_userdata(request):
+            return get_userdata(metadata_dir, request)
 
         def application(environ, start_response):
             # use setdefault so unittests can override this
             environ.setdefault('cheesy2.metadata', _get_metadata)
+            environ.setdefault('cheesy2.userdata', _get_userdata)
 
             return app(environ, start_response)
 

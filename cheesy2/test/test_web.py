@@ -104,3 +104,28 @@ def test_metadata_list():
         )
     eq(res.headers['Content-Type'], 'text/plain')
     eq(res.body, 'ssh-rsa AAAAfoo my-public-key')
+
+def test_userdata_simple():
+    app = web.app_factory(global_config={})
+    app = webtest.TestApp(app)
+    res = app.get(
+        '/latest/user-data',
+        extra_environ={
+            'cheesy2.userdata': lambda request: 'xyzzy',
+            },
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body, 'xyzzy')
+
+def test_userdata_notfound():
+    app = web.app_factory(global_config={})
+    app = webtest.TestApp(app)
+    res = app.get(
+        '/latest/user-data',
+        extra_environ={
+            'cheesy2.userdata': lambda request: None,
+            },
+        status=404,
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body, '404 Not Found')
