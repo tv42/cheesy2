@@ -129,3 +129,22 @@ def test_userdata_notfound():
         )
     eq(res.headers['Content-Type'], 'text/plain')
     eq(res.body, '404 Not Found')
+
+def test_preseed_simple():
+    app = web.app_factory(global_config={})
+    app = webtest.TestApp(app)
+    res = app.get(
+        '/preseed/ubuntu-10.10',
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body[:4], 'd-i ')
+
+def test_preseed_notfound():
+    app = web.app_factory(global_config={})
+    app = webtest.TestApp(app)
+    res = app.get(
+        '/preseed/does-not-exist',
+        status=404,
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body, '404 Not Found')

@@ -1,6 +1,7 @@
 import errno
 import json
 import os
+import pkg_resources
 import restish.app
 import restish.page
 
@@ -34,6 +35,10 @@ class Cheesy2(resource.Resource):
     @resource.child('2009-04-04')
     def api_2009_04_04(self, request, segments):
         return APIVersion()
+
+    @resource.child()
+    def preseed(self, request, segments):
+        return Preseed()
 
 class APIVersion(resource.Resource):
 
@@ -124,6 +129,29 @@ class MetaData(resource.Resource):
             meta = meta.value
 
         return MetaData(metadata=meta), segments[1:]
+
+class Preseed(resource.Resource):
+
+    @resource.child(resource.any)
+    def preseed(self, request, segments):
+        if segments[1:]:
+            return None
+        name = segments[0]
+        name = name.replace('.', '_')
+        try:
+            f = pkg_resources.resource_stream(
+                'cheesy2.preseed',
+                '{0}.preseed'.format(name),
+                )
+        except IOError, e:
+            if e.errno == errno.ENOENT:
+                return None
+            else:
+                raise
+        return http.ok(
+            [('Content-Type', 'text/plain')],
+            f,
+            )
 
 def load_builtin_metadata(request):
     """Load metadata from builtin and libvirt sources (not configuration)."""

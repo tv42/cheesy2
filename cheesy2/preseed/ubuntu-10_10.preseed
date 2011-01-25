@@ -1,0 +1,57 @@
+d-i debian-installer/locale string en_US
+d-i console-setup/ask_detect boolean false
+d-i console-setup/layoutcode string us
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string unassigned-hostname
+d-i netcfg/get_domain string unassigned-domain
+d-i netcfg/wireless_wep string
+d-i mirror/country string manual
+# TODO the us mirror seems to be broken around 2011-01
+#d-i mirror/http/hostname string archive.us.ubuntu.com
+d-i mirror/http/hostname string archive.ubuntu.com
+d-i mirror/http/directory string /ubuntu
+d-i mirror/http/proxy string
+d-i clock-setup/utc boolean true
+d-i time/zone string US/Pacific
+d-i clock-setup/ntp boolean false
+d-i partman-auto/method string regular
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-lvm/confirm boolean true
+d-i partman-auto/choose_recipe select atomic
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i partman-md/confirm boolean true
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i passwd/user-fullname string Ubuntu User
+
+# cloud-init assumes this is ubuntu, or it needs to be configured; easier to keep this as is
+d-i passwd/username string ubuntu
+
+d-i passwd/user-password-crypted password !
+d-i user-setup/encrypt-home boolean false
+tasksel tasksel/first multiselect
+
+# acpid makes the vm shutdown cleanly from host command; cloud-init
+# lets us customize it automatically
+d-i pkgsel/include string acpid cloud-init
+
+d-i pkgsel/update-policy select none
+d-i pkgsel/updatedb boolean false
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i finish-install/reboot_in_progress note
+d-i debian-installer/exit/poweroff boolean true
+
+# "passwd -d" makes the account passwordless, as opposed to locked;
+# allows console logins without password, but ssh still won't let
+# anyone in without authorized_keys; sudo will also refuse to accept
+# empty passwords due to PAM nullok_secure, so we also configure sudo
+# for passwordless access.
+
+d-i preseed/late_command string in-target passwd -d ubuntu && in-target perl -pe 's/^(%admin ALL=\(ALL\) )(ALL)$/$1NOPASSWD:$2/g' -i /etc/sudoers

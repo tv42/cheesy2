@@ -14,6 +14,7 @@ setup(
 
     install_requires=[
         'restish >=0.11',
+        'pkg_resources',
         ],
 
     # ext_modules=[
