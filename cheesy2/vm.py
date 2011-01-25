@@ -7,6 +7,7 @@ def create():
         'locale=en_US',
         'console-setup/ask_detect=false',
         'console-setup/layoutcode=us',
+        'netcfg/get_hostname=unassigned-hostname',
         'partman-lvm/confirm=true',
         'url=http://169.254.169.254/preseed/ubuntu-10.10',
         ]
