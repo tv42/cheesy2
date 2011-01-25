@@ -64,3 +64,43 @@ def test_metadata_dict():
         )
     eq(res.headers['Content-Type'], 'text/plain')
     eq(res.body, 'baz/\nfoo\n')
+
+def test_metadata_list():
+    app = web.app_factory(global_config={})
+    app = webtest.TestApp(app)
+    meta = {
+        'cheesy2.metadata': lambda request: {
+            'foo': 'bar',
+            'public-keys': [
+                web.Named(name='my-public-key', value={'openssh-key': 'ssh-rsa AAAAfoo my-public-key'}),
+                ],
+            },
+        }
+
+    res = app.get(
+        '/latest/meta-data/',
+        extra_environ=meta,
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body, 'foo\npublic-keys/\n')
+
+    res = app.get(
+        '/latest/meta-data/public-keys/',
+        extra_environ=meta,
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body, '0=my-public-key\n')
+
+    res = app.get(
+        '/latest/meta-data/public-keys/0/',
+        extra_environ=meta,
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body, 'openssh-key\n')
+
+    res = app.get(
+        '/latest/meta-data/public-keys/0/openssh-key',
+        extra_environ=meta,
+        )
+    eq(res.headers['Content-Type'], 'text/plain')
+    eq(res.body, 'ssh-rsa AAAAfoo my-public-key')

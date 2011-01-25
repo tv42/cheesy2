@@ -5,6 +5,20 @@ from restish import resource
 from restish import http
 
 from cheesy2 import arp
+class Named(object):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return str(self.value)
+
+    def __repr__(self):
+        return '{class_}(name={name!r}, value={value!r})'.format(
+            class_=self.__class__.__name__,
+            name=self.name,
+            value=self.value,
+            )
 
 class Cheesy2(resource.Resource):
 
@@ -29,14 +43,35 @@ class MetaData(resource.Resource):
         super(MetaData, self).__init__()
         self.metadata = metadata
 
+    @resource.GET()
+    def serve(self, request):
+        if isinstance(self.metadata, (dict, list)):
+            return http.not_found()
+        else:
+            return http.ok(
+                [('Content-Type', 'text/plain')],
+                [self.metadata],
+                )
+
     @resource.child('')
     def index(self, request, segments):
         def g():
-            for k,v in sorted(self.metadata.iteritems()):
-                if isinstance(v, dict):
-                    yield '{0}/\n'.format(k)
-                else:
-                    yield '{0}\n'.format(k)
+            if isinstance(self.metadata, dict):
+                for k,v in sorted(self.metadata.iteritems()):
+                    if isinstance(v, dict):
+                        yield '{0}/\n'.format(k)
+                    elif isinstance(v, list):
+                        yield '{0}/\n'.format(k)
+                    else:
+                        yield '{0}\n'.format(k)
+            elif isinstance(self.metadata, list):
+                for i, v in enumerate(self.metadata):
+                    name = ''
+                    if isinstance(v, Named):
+                        name = v.name
+                    yield '{0}={1}\n'.format(i, name)
+            else:
+                raise RuntimeError('Cannot index weird metadata: %r' % self.metadata)
 
         return http.ok(
             [('Content-Type', 'text/plain')],
@@ -45,16 +80,31 @@ class MetaData(resource.Resource):
 
     @resource.child(resource.any)
     def child(self, request, segments):
-        meta = self.metadata.get(segments[0])
+        if isinstance(self.metadata, dict):
+            meta = self.metadata.get(segments[0])
+        elif isinstance(self.metadata, list):
+            try:
+                index = int(segments[0])
+            except ValueError:
+                meta = None
+            else:
+                if index < 0:
+                    meta = None
+                else:
+                    try:
+                        meta = self.metadata[index]
+                    except IndexError:
+                        meta = None
+        else:
+            meta = None
+
         if meta is None:
             return http.not_found()
-        elif isinstance(meta, dict):
-            return MetaData(metadata=meta), segments[1:]
-        else:
-            return http.ok(
-                [('Content-Type', 'text/plain')],
-                [meta],
-                )
+
+        if isinstance(meta, Named):
+            meta = meta.value
+
+        return MetaData(metadata=meta), segments[1:]
 
 def get_metadata(metadata_dir, request):
     ipaddr = request.remote_addr
