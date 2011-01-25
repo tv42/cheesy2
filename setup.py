@@ -26,6 +26,10 @@ setup(
     #     ],
 
     entry_points={
+        'console_scripts': [
+            'cheesy2-vm-create = cheesy2.vm:create',
+            ],
+
         'paste.app_factory': [
             'main=cheesy2.web:app_factory',
             ],
