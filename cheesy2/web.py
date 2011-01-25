@@ -1,3 +1,6 @@
+import errno
+import json
+import os
 import restish.app
 import restish.page
 
@@ -123,6 +126,16 @@ def get_metadata(metadata_dir, request):
         }
     virt = from_libvirt.get_libvirt_config(macaddr)
     meta.update(virt)
+    try:
+        with file(os.path.join(metadata_dir, '{0}.json'.format(macaddr))) as f:
+            custom = json.load(f)
+    except IOError, e:
+        if e.errno == errno.ENOENT:
+            pass
+        else:
+            raise
+    else:
+        meta.update(custom)
     return meta
 
 def setup_environ(app, global_config, local_config):
