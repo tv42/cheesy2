@@ -122,7 +122,7 @@ def get_metadata(metadata_dir, request):
         'cheesy2-mac-address-seen': macaddr,
         # not sure if this is the smartest thing, but it is unique
         'instance-id': macaddr,
-        'local-hostname': 'vm{0}.internal'.format(macaddr)
+        'local-hostname': 'vm{0}.internal'.format(macaddr),
         }
     virt = from_libvirt.get_libvirt_config(macaddr)
     meta.update(virt)
